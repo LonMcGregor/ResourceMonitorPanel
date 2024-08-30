@@ -1,0 +1,14 @@
+{
+    "name": {
+        "message": "Resource Monitor Panel",
+        "description": "Title of extension"
+    },
+    "description": {
+        "message": "Show all the media resources on the page in a panel",
+        "description": "Description of extension"
+    },
+    "vivaldi":{
+        "message": "Works best in a Vivaldi web panel! Add this URL: ",
+        "description": "vivaldi advert, to which a panel url will be appended"
+    }
+}
