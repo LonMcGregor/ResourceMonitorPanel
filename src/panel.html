@@ -2,12 +2,23 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src *; media-src *; font-src *;" />
+        <meta http-equiv="Content-Security-Policy" content="default-src * data: 'unsafe-inline'" />
         <link rel="stylesheet" type="text/css" href="panel.css" />
         <link rel="shortcut icon" type="image/png" href="16.png" />
         <title></title>
     </head>
     <body>
+        <nav>
+            <span id="filter"></span>
+
+            <button id="btn-img"><label></label>(<span>0</span>)</button>
+            <button id="btn-media"><label></label>(<span>0</span>)</button>
+            <button id="btn-font"><label></label>(<span>0</span>)</button>
+            <button id="btn-other"><label></label>(<span>0</span>)</button>
+        </nav>
+        <main>
+
+        </main>
         <script type="text/javascript" src="panel.js"></script>
     </body>
 </html>

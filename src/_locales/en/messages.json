@@ -10,5 +10,25 @@
     "vivaldi":{
         "message": "Works best in a Vivaldi web panel! Add this URL: ",
         "description": "vivaldi advert, to which a panel url will be appended"
+    },
+    "filter":{
+        "message": "Filters",
+        "description": "Menu label for filter"
+    },
+    "img":{
+        "message": "img",
+        "description": "Button label for image"
+    },
+    "media":{
+        "message": "media",
+        "description": "Button label for media - sound, video"
+    },
+    "font":{
+        "message": "font",
+        "description": "Button label for fonts"
+    },
+    "other":{
+        "message": "other",
+        "description": "Button label for all other media types"
     }
 }
