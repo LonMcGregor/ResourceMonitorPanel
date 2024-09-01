@@ -1,7 +1,10 @@
 # ResMon Panel
 
 ## Installing
-From the (TODO)
+* Download as zip
+* Unpack
+* Enable dev mode
+* Install unpacked extension, use src folder
 
 ## What can it do
 Grab all the links to media files, images, etc. on the page and show them to you in a panel
@@ -10,7 +13,8 @@ Grab all the links to media files, images, etc. on the page and show them to you
 
 ### Capturing Media
 Media is captured from within the page by querying dom objects directly.
-Also should monitor network request to find resources that don't get added directly to dom.
+
+Also monitors network request via `chrome.webRequest` to find resources that don't get added directly to dom.
 
 However there are limitations to monitoring web requests:
 * chrome.webrequest fails to capture cached resources?
@@ -18,18 +22,30 @@ However there are limitations to monitoring web requests:
 
 
 Organisation:
- [panel page] ---------------------- [one of many content pages]
-Shows in a panel in browser             records web request messages
-when the tab is changed it              queries for all tags - `<img>`
-asks the content script of              `<video>` `<audio>` `<svg>`  
-the newly opened tab for any            also looks for any css inline
-media present so it can display         with `background-image` or `font`
-Captures net requests       
-Sends to content pages                  if there are any changes, send 
-the service worker captures             to the panel, if the panel is
-something, then sends to                displaying the current tab
-the content script to record                                  
 
+    [panel page] --------------------------- [one of many content pages]
+
+
+    Shows in a panel in browser            
+    when the tab is changed it             
+    asks the content script of             
+    the newly opened tab for any           
+    media present so it can display        
+    Captures net requests       
+    Sends to content pages                 
+    the service worker captures            
+    something, then sends to               
+    the content script to record                                  
+
+
+                                             records web request messages
+                                             queries for all tags - `<img>`
+                                             `<video>` `<audio>` `<svg>`  
+                                             also looks for any css inline
+                                             with `background-image` or `font`
+                                             if there are any changes, send 
+                                             to the panel, if the panel is
+                                             displaying the current tab
 Example of a webrequest object:
 ```
 {
@@ -71,3 +87,8 @@ Options to acces the media files more easily:
 * [ ] Click to view in a new tab
 * [x] One-click download
 * [ ] Download all
+
+### Misc
+- [ ] Add some test cases
+- [ ] Screenshots
+- [ ] Webstore link?
