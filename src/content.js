@@ -14,7 +14,7 @@ function qualifyURL(url){
         return url;
     }
     if(url.indexOf('url(')===0){ // css style url
-        let theurl = /^url\(['"]?([^'"]+)['"]?\)$/.exec(url)[1];
+        let theurl = /url\(['"]?([^'"]+)['"]?\)/.exec(url)[1];
         return qualifyURL(theurl);
     }
     if(url.indexOf('//')===0){ // URL relative to network protocol
@@ -53,13 +53,15 @@ function getImages(){ //links may be relative, make sure the sources are fully q
     // don't do a long querySelector as that would be inefficient.
     // get all the meta tags from head and then filter manually,
     // there will not be that many of them compared to searching whole page
-    const metaels = Array.from(document.getElementsByTagName('meta')).filter(meta => META_RE.test(meta.content));
+    const metaels = Array.from(document.getElementsByTagName('meta')).filter(meta => META_RE.test(meta.content.toLowerCase()));
     const metas = Array.from(metaels).map(meta => { return {src: qualifyURL(meta.content)}; });
     const linkels = Array.from(document.getElementsByTagName('link')).filter(link => link.rel.indexOf('icon')>=0);
     const links = Array.from(linkels).map(link => { return {src: qualifyURL(link.href)}; });
     const styledels = document.querySelectorAll('[style*=background-image]');
     const styleds = Array.from(styledels).map(styled => { return {src: qualifyURL(styled.style.backgroundImage)}; });
-    return images.concat(vectors, metas, links, styleds, CACHED_IMGS);
+    const styledels2 = document.querySelectorAll('[style*=background]');
+    const styleds2 = Array.from(styledels2).filter(el => META_RE.test(el.style.background.toLowerCase())).map(styled => { return {src: qualifyURL(styled.style.background)}; });
+    return images.concat(vectors, metas, links, styleds, styleds2, CACHED_IMGS);
     // TODO add caching so if switch tab I don't need to constantly re-query all of this, which will likely be slow on some pages
 }
 
