@@ -10,10 +10,22 @@ const CACHED_IMGS = [];
  * @returns {string} a full URL
  */
 function qualifyURL(url){
-    if(url.indexOf('http')===0 || url.indexOf('data')===0){
+    if(url.indexOf('http://')===0 || url.indexOf('https://')===0 || url.indexOf('data:')===0){ // regular url
         return url;
     }
-    // TODO fix the url
+    if(url.indexOf('url(')===0){ // css style url
+        let theurl = /^url\(['"]?([^'"]+)['"]?\)$/.exec(url)[1];
+        return qualifyURL(theurl);
+    }
+    if(url.indexOf('//')===0){ // URL relative to network protocol
+        return window.location.protocol + url;
+    }
+    if(url.indexOf('/')===0){ // URL relative to domain
+        return window.location.origin + url;
+    }
+
+    // URL relative to current directory
+    return window.location.href.split('/').slice(0,-1).join('/') + '/' + url;
 
     // if the url is not a url, e.g. if it is a meta content
     // url that happens to contain the string png which is
@@ -22,13 +34,6 @@ function qualifyURL(url){
     // TODO implement this ^ and make sure that passing ''
     // doesnt' send it into any unpleasant loops or cause
     // inefficiency
-
-    // If the url is from a style, itmay include something like
-    // url('') and this needs to be trimmed off, before passing
-    // the result back through the qualifyURL function. make
-    // sure not to end in a recursive loop,
-
-    // if it is a relativepath, parse this and turn it into a URL
 }
 
 /**
