@@ -13,8 +13,11 @@
       "128": "128.png"
     },
     "author": "Léon McGregor",
-    "homepage_url": "https://github.com/LonMcGregor/",
+    "homepage_url": "https://github.com/LonMcGregor/ResourceMonitorPanel/",
 
+    "background": {
+      "service_worker": "sw.js"
+    },
 
     "content_scripts": [
       {
@@ -23,12 +26,17 @@
       }
     ],
 
+    "side_panel": {
+      "default_path": "panel.html"
+    },
+
     "content_security_policy": {
       "extension_pages": "default-src 'self'; img-src *; media-src *; font-src *;"
     },
     "permissions": [
       "webRequest",
-      "downloads"
+      "downloads",
+      "sidePanel"
     ],
     "host_permissions": ["<all_urls>"],
 
