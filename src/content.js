@@ -66,6 +66,53 @@ function getImages(){ //links may be relative, make sure the sources are fully q
 }
 
 /**
+ * Get all the streamable media on a page, audio videos
+ * @returns Array of media details {src:string, type:mime string | 'unknown'}
+ */
+function getMedia(){
+    // Often streaming sites may have a media tag, but no src, instead loading from a stream
+    // filter those missing an src
+    // TODO handle blob: urls
+    const audioels = document.getElementsByTagName('audio');
+    const audios = Array.from(audioels).filter(audio => audio.src).map(audio => { return {src: qualifyURL(audio.src), type:'audio/'}; })
+    const videoels = document.getElementsByTagName('video');
+    const videos = Array.from(videoels).filter(vid => vid.src).map(vid => { return {src: qualifyURL(vid.src), type: 'video/'}; });
+    const trackels = document.getElementsByTagName('track');
+    const tracks = Array.from(trackels).map(track => { return {src: qualifyURL(track.src), type:'text/'}; });
+    const sourceels = document.getElementsByTagName('source');
+    const sources = Array.from(sourceels).map(source => { return {src: qualifyURL(source.src), type: source.type}; });
+    return audios.concat(videos, tracks, sources);
+}
+
+let LISTOFFONTS = [];
+document.fonts.ready.then((fontFaceSet) => {
+    // fires after all fonts loaded
+    LISTOFFONTS = [...fontFaceSet];
+});
+
+/**
+ * Get all fonts loaded into a page
+ * This needs to be done using a listener on document fonts ready, and can then be queried after
+ * @returns Array of FontFace {... family:string, variant:string}
+ */
+function getFonts(){
+    return LISTOFFONTS; // TODO this method doesn't return a source url, just the name of the loaded font
+}
+
+/**
+ * Get all other application embeds on a page
+ * @returns Array of media details {src:string, type:mime string | 'unknown'}
+ */
+function getOther(){
+    const embedels = document.getElementsByTagName('embed');
+    const embeds = Array.from(embedels).map(embed => { return {src: qualifyURL(embed.src), type: embed.type}; })
+    const objectels = document.getElementsByTagName('object');
+    const objects = Array.from(objectels).map(object => { return {src: qualifyURL(object.data), type: object.type}; })
+    // TODOhandle <canvas>
+    return embeds.concat(objects);
+}
+
+/**
  * Send message with media details
  * @param images array to send
  * @param media array to send (audio, video)
@@ -85,7 +132,7 @@ function sendMedia(images, media, fonts, other){
  * Get list of link details and send it
  */
 function getAllMedia(){
-    sendMedia(getImages(), [], [], []);
+    sendMedia(getImages(), getMedia(), getFonts(), getOther());
 }
 
 /**

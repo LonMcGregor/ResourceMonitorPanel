@@ -2,6 +2,13 @@
 
 const EXTAB = chrome.runtime.getURL("");
 
+const CURRENT = {
+    IMAGES: [],
+    MEDIA: [],
+    FONTS: [],
+    OTHER: []
+};
+
 // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 async function digestMessage(message) {
   const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
@@ -13,21 +20,33 @@ async function digestMessage(message) {
   return hashHex;
 }
 
-async function addImages(images){
-    const [oldsection] = document.getElementsByTagName('section');
-    if(oldsection){
-        document.body.removeChild(oldsection)
-    }
-    const section = document.createElement('section');
+async function dedupAndRecordResources(resources, storekey, labelid){
+    const addedhashes = [];
     const added = [];
-    for (let i = 0; i < images.length; i++) {
+    for (let i = 0; i < resources.length; i++) {
         try {
-            const thisimg = images[i];
-            const imghash = await digestMessage(thisimg.src);
-            let newimg;
-            if(added.indexOf(imghash) >= 0){
-                continue;
+            const thisres = resources[i];
+            const thishash = await digestMessage(thisres.src);
+            if(addedhashes.indexOf(thishash) < 0){
+                addedhashes.push(thishash);
+                added.push(thisres);
             }
+        } catch (e) {
+            console.warn(e);
+            // there was an error deduping this one resource,
+            // fail with a warn, but keep adding the others
+        }
+    }
+    document.getElementById(labelid).innerText = added.length
+    CURRENT[storekey] = added;
+}
+
+function renderImages(){
+    const section = document.createElement('section');
+    for (let i = 0; i < CURRENT.IMAGES.length; i++) {
+        const thisimg = CURRENT.IMAGES[i];
+        let newimg;
+        try {
             if(thisimg.src.indexOf('<svg')===0){
                 const tmp = document.createElement('div');
                 tmp.innerHTML = thisimg.src;
@@ -36,17 +55,109 @@ async function addImages(images){
                 newimg = document.createElement('img');
                 newimg.src = thisimg.src;
             }
-            newimg.id = imghash;
+            newimg.addEventListener('click',onClick);
             section.appendChild(newimg);
-            added.push(imghash);
         } catch (e) {
             console.warn(e);
             // there was an error adding this one image,
             // fail silently, but keep adding the others
         }
     }
-    document.body.appendChild(section);
-    document.querySelector('#btn-img span').innerText = added.length
+    const main = document.body.children[1];
+    try{
+        const oldimgs = document.getElementById('images');
+        main.removeChild(oldimgs);
+    } catch {} // try removing the old images, it will fail on first run because there are no images
+    section.id = 'images';
+    main.appendChild(section);
+}
+
+function renderMedia(){
+    const section = document.createElement('section');
+    for (let i = 0; i < CURRENT.MEDIA.length; i++) {
+        const thismed = CURRENT.MEDIA[i];
+        let newmed;
+        try {
+            switch (thismed.type) {
+                case 'audio/':
+                    newmed = document.createElement('audio');
+                    newmed.src = thismed.src;
+                    break;
+                case 'video/':
+                    newmed = document.createElement('video');
+                    newmed.src = thismed.src;
+                    break;
+                default:
+                    newmed = document.createElement('a');
+                    newmed.href = thismed.src;
+                    newmed.target = '_blank';
+                    newmed.innerText = newmed.type + thismed.src.substr(7,64);
+            }
+            section.appendChild(newmed);
+        } catch (e) {
+            console.warn(e);
+            // there was an error adding this one media,
+            // fail silently, but keep adding the others
+        }
+    }
+    const main = document.body.children[1];
+    try{
+        const oldmed = document.getElementById('media');
+        main.removeChild(oldmed);
+    } catch {} // try removing the old media, it will fail on first run because there are no images
+    section.id = 'media';
+    main.appendChild(section);
+}
+
+function renderFont(){
+    const section = document.createElement('section');
+    for (let i = 0; i < CURRENT.FONTS.length; i++) {
+        const thismed = CURRENT.FONTS[i];
+        let newmed;
+        try {
+            // TODO eventually, add a preview and URLs
+            newmed = document.createElement('p');
+            newmed.innerText = thismed['font-family'];
+            section.appendChild(newmed);
+        } catch (e) {
+            console.warn(e);
+            // there was an error adding this one media,
+            // fail silently, but keep adding the others
+        }
+    }
+    const main = document.body.children[1];
+    try{
+        const oldmed = document.getElementById('media');
+        main.removeChild(oldmed);
+    } catch {} // try removing the old media, it will fail on first run because there are no images
+    section.id = 'media';
+    main.appendChild(section);
+}
+
+function renderOther(){
+    const section = document.createElement('section');
+    for (let i = 0; i < CURRENT.OTHER.length; i++) {
+        const thismed = CURRENT.OTHER[i];
+        let newmed;
+        try {
+            newmed = document.createElement('a');
+            newmed.a = thismed.src;
+            newmed.target = '_blank';
+            newmed.innerText = thismed.type + thismed.src.substr(7,64);
+            section.appendChild(newmed);
+        } catch (e) {
+            console.warn(e);
+            // there was an error adding this one media,
+            // fail silently, but keep adding the others
+        }
+    }
+    const main = document.body.children[1];
+    try{
+        const oldmed = document.getElementById('other');
+        main.removeChild(oldmed);
+    } catch {} // try removing the old media, it will fail on first run because there are no images
+    section.id = 'other';
+    main.appendChild(section);
 }
 
 function logRequest(details){
@@ -66,16 +177,35 @@ function logRequest(details){
     digestMessage(details.url).then(hash => {makeElement(details, hash);});
 }
 
-function onMessage(message){
+async function onMessage(message){
     if(document.hidden){
         return;
     }
+
     if(message.images){
-        // TODO handle this new set of page resources
-        addImages(message.images);
-        // TODO efficiency - add all to shadow el then add at once
-        // TODO duplicate handling?
-        // TODO split up resource types
+        await dedupAndRecordResources(message.images, "IMAGES", 'imgcount');
+    }
+    if(message.media){
+        await dedupAndRecordResources(message.media, "MEDIA", 'mediacount');
+    }
+    if(message.fonts){
+        await dedupAndRecordResources(message.fonts, "FONTS", 'fontcount');
+    }
+    if(message.other){
+        await dedupAndRecordResources(message.other, "OTHER", 'othercount');
+    }
+
+    if(document.getElementById('btn-img').checked){
+        renderImages();
+    }
+    if(document.getElementById('btn-media').checked){
+        renderMedia();
+    }
+    if(document.getElementById('btn-font').checked){
+        renderFont();
+    }
+    if(document.getElementById('btn-other').checked){
+        renderOther();
     }
 
     if(message.request){
@@ -105,6 +235,22 @@ function onWebRequestComplete(requestDetail){
     });
 }
 
+function onVisiblityChange(){
+    if(document.hidden){
+        return;
+    }
+    chrome.tabs.query({active:true, lastFocusedWindow: true, windowType: "normal"})
+    .then(tabs => {
+        if(tabs[0]){
+            chrome.tabs.sendMessage(tabs[0].id, {panelWantsMedia:true})
+            .catch(error => {
+                // The tab that was opened does not have an active content script, the tab needs to be refreshed
+                // or it is stuck somehow, e.g. slow js from page, in which case the next run should work fine.
+            });
+        }
+    });
+}
+
 /**
  * click handler to allow instant download
  * @param {mouseevent} e
@@ -130,14 +276,38 @@ const WR_FILTER = {
     ]
 }
 
+function onFilter(){
+    // TODO make this more efficient and only add/remove the new filter
+    if(document.getElementById('btn-img').checked){
+        renderImages();
+    }
+    if(document.getElementById('btn-media').checked){
+        renderMedia();
+    }
+    if(document.getElementById('btn-font').checked){
+        renderFont();
+    }
+    if(document.getElementById('btn-other').checked){
+        renderOther();
+    }
+}
+
 // chrome.webRequest.onCompleted.addListener(onWebRequestComplete, WR_FILTER, []); // TODO disabled for now
 chrome.runtime.onMessage.addListener(onMessage);
 chrome.tabs.onActivated.addListener(onTabChange);
-document.addEventListener("click", onClick);
+document.addEventListener('visibilitychange', onVisiblityChange);
 
 document.title = chrome.i18n.getMessage("name");
 document.getElementById('filter').innerText = chrome.i18n.getMessage("filter");
-document.getElementById('btn-img').firstChild.innerText = chrome.i18n.getMessage("img");
-document.getElementById('btn-media').firstChild.innerText = chrome.i18n.getMessage("media");
-document.getElementById('btn-font').firstChild.innerText = chrome.i18n.getMessage("font");
-document.getElementById('btn-other').firstChild.innerText = chrome.i18n.getMessage("other");
+document.querySelector('#btn-img + div span').innerText = chrome.i18n.getMessage("img");
+document.querySelector('#btn-media + div span').innerText = chrome.i18n.getMessage("media");
+document.querySelector('#btn-font + div span').innerText = chrome.i18n.getMessage("font");
+document.querySelector('#btn-other + div span').innerText = chrome.i18n.getMessage("other");
+
+document.getElementById('btn-img').addEventListener('click', onFilter);
+document.getElementById('btn-media').addEventListener('click', onFilter);
+document.getElementById('btn-font').addEventListener('click', onFilter);
+document.getElementById('btn-other').addEventListener('click', onFilter);
+
+// now the panel is ready, set up for first use with current tab
+onVisiblityChange();
